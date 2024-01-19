@@ -20,6 +20,13 @@ public:
     Matrix operator-(const Matrix& M) const;
     Matrix operator*(const Matrix& M) const;
     Matrix operator*(const int& scalar) const;
+    Matrix operator|(const Matrix& M) const;
+    Matrix operator/(const Matrix& M) const;
+    Matrix& operator*=(const Matrix& M);
+    Matrix& operator+=(const Matrix& M);
+    Matrix& operator-=(const Matrix& M);
+    Matrix& operator|=(const Matrix& M);
+    Matrix& operator/=(const Matrix& M);
 };
 
 Matrix::Matrix() {
@@ -37,7 +44,7 @@ Matrix::Matrix() {
 Matrix::Matrix(const int& columns, const int& rows) : columns(columns), rows(rows) {
     data = new int*[rows];
     for (int i = 0; i < rows; i++) {
-        data[i] = new int[columns];
+        data[i] = new int[columns]();
     }
 }
 
@@ -135,6 +142,148 @@ Matrix Matrix::operator*(const int& scalar) const {
     return result;
 }
 
+Matrix Matrix::operator|(const Matrix& M) const {
+    if (rows != M.rows) {
+        throw std::invalid_argument("Rows must be the same to concatenate.");
+    }
+    Matrix result(rows, columns + M.columns);
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < columns; ++j) {
+            result.data[i][j] = data[i][j];
+        }
+        for (int j = 0; j < M.columns; ++j) {
+            result.data[i][columns + j] = M.data[i][j];
+        }
+    }
+    return result;
+}
+
+Matrix Matrix::operator/(const Matrix& M) const {
+    if (columns != M.columns) {
+        throw std::invalid_argument("Columns must be the same to concatenate.");
+    }
+    Matrix result(rows + M.rows, columns);
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < columns; ++j) {
+            result.data[i][j] = data[i][j];
+        }
+    }
+    for (int i = 0; i < M.rows; ++i) {
+        for (int j = 0; j < M.columns; ++j) {
+            result.data[rows + i][j] = M.data[i][j];
+        }
+    }
+    return result;
+}
+
+Matrix& Matrix::operator*=(const Matrix& M) {
+    if (this->columns != M.rows) {
+        throw std::invalid_argument("Mismatched dimensions for matrix multiplication!");
+    }
+    Matrix tmp = *this * M;
+
+    for (int i = 0; i < this->rows; i++) {
+        delete[] this->data[i];
+    }
+    delete[] this->data;
+
+    this->rows = tmp.rows;
+    this->columns = tmp.columns;
+    this->data = new int*[this->rows];
+    for (int i = 0; i < this->rows; i++) {
+        this->data[i] = new int[this->columns];
+        for (int j = 0; j < this->columns; j++) {
+            this->data[i][j] = tmp.data[i][j];
+        }
+    }
+    return *this;
+}
+
+Matrix& Matrix::operator+=(const Matrix& M) {
+    if (this->rows != M.rows || this->columns != M.columns) {
+        throw std::invalid_argument("Matrix dimensions must match to add!");
+    }
+    Matrix tmp = *this + M;
+
+    for (int i = 0; i < this->rows; i++) {
+        delete[] this->data[i];
+    }
+    delete[] this->data;
+
+    this->rows = tmp.rows;
+    this->columns = tmp.columns;
+    this->data = new int*[this->rows];
+    for (int i = 0; i < this->rows; i++) {
+        this->data[i] = new int[this->columns];
+        for (int j = 0; j < this->columns; j++) {
+            this->data[i][j] = tmp.data[i][j];
+        }
+    }
+    return *this;
+}
+
+Matrix& Matrix::operator-=(const Matrix& M) {
+    Matrix temp = *this - M;
+
+    for (int i = 0; i < rows; i++) {
+        delete[] this->data[i];
+    }
+    delete[] this->data;
+
+    rows = temp.rows;
+    columns = temp.columns;
+    data = new int*[rows];
+    for (int i = 0; i < rows; ++i) {
+        data[i] = new int[columns];
+        for (int j = 0; j < columns; ++j) {
+            data[i][j] = temp.data[i][j];
+        }
+    }
+    return *this;
+}
+
+Matrix& Matrix::operator|=(const Matrix& M) {
+    if (rows != M.rows) {
+        cout << "Cannot apply operator |= to matrices of different heights." << endl;
+        return *this;
+    } else {
+        int newColumns = columns + M.columns;
+        Matrix result(newColumns, rows);
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < columns; ++j) {
+                result.data[i][j] = data[i][j];
+            }
+            for (int j = 0; j < M.columns; ++j) {
+                result.data[i][columns + j] = M.data[i][j];
+            }
+        }
+        *this = result;
+        return *this;
+    }
+}
+
+Matrix& Matrix::operator/=(const Matrix& M) {
+    if (columns != M.columns) {
+        cout << "Cannot apply operator /= to matrices of different widths." << endl;
+        return *this;
+    } else {
+        int newRows = rows + M.rows;
+        Matrix result(columns, newRows);
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < columns; ++j) {
+                result.data[i][j] = data[i][j];
+            }
+        }
+        for (int i = 0; i < M.rows; ++i) {
+            for (int j = 0; j < M.columns; ++j) {
+                result.data[rows + i][j] = M.data[i][j];
+            }
+        }
+        *this = result;
+        return *this;
+    }
+}
+
 
 int main()
 {
@@ -142,7 +291,7 @@ int main()
     matrixA.randomize();
     cout << "Matrix A:" << endl;
     matrixA.print();
-    Matrix matrixB(3, 3);
+    Matrix matrixB(5, 5);
     matrixB.randomize();
     cout << "Matrix B:" << endl;
     matrixB.print();
@@ -158,4 +307,25 @@ int main()
     cout << "Matrix A * 2:" << endl;
     Matrix resultScalarMultiply = matrixA * 2;
     resultScalarMultiply.print();
+    cout << "Matrix A | Matrix B (concatenate columns):" << endl;
+    Matrix resultConcatColumns = matrixA | matrixB;
+    resultConcatColumns.print();
+    cout << "Matrix A / Matrix B (concatenate rows):" << endl;
+    Matrix resultConcatRows = matrixA / matrixB;
+    resultConcatRows.print();
+    matrixA += matrixB;
+    cout << "Matrix A after A += B:" << endl;
+    matrixA.print();
+    matrixA -= matrixB;
+    cout << "Matrix A after A -= B:" << endl;
+    matrixA.print();
+    matrixA *= matrixB;
+    cout << "Matrix A after A *= B:" << endl;
+    matrixA.print();
+    matrixA |= matrixB;
+    cout << "Matrix A after A |= B:" << endl;
+    matrixA.print();
+    matrixA /= matrixB;
+    cout << "Matrix A after A /= B:" << endl;
+    matrixA.print();
 }
