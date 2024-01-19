@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1705701939 source:c:\users\mati\desktop\studia\pp\oop\oop\main.cpp
+	<iostream>
+	<time.h>
+	<vector>
+
