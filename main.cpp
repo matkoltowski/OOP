@@ -169,7 +169,8 @@ Matrix Matrix::operator/(const Matrix& M) const {
         }
     }
     for (int i = 0; i < M.rows; ++i) {
-        for (int j = 0; j < M.columns; ++j) {
+        result.data[rows + i] = new int[columns];
+        for (int j = 0; j < columns; ++j) {
             result.data[rows + i][j] = M.data[i][j];
         }
     }
